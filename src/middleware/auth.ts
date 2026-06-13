@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { JwtPayload } from "../types/index.js";
+import { JwtPayload } from "../types";
 
 const JWT_SECRET =
   process.env["JWT_SECRET"] ?? "linker-super-secret-change-in-prod";
@@ -29,3 +29,4 @@ export function authMiddleware(
 export function signToken(payload: JwtPayload): string {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: "24h" });
 }
+

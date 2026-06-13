@@ -1,12 +1,8 @@
 import { Router, Request, Response } from "express";
 import bcrypt from "bcryptjs";
-import {
-  AdminUserModel,
-  StudioModel,
-  VpnConfigModel,
-} from "../db/index.js";
-import { authMiddleware, signToken } from "../middleware/auth.js";
-import { VpnConfig } from "../types/index.js";
+import { AdminUserModel, StudioModel, VpnConfigModel } from "../db";
+import { authMiddleware, signToken } from "../middleware/auth";
+import { VpnConfig } from "../types";
 
 export const adminRouter = Router();
 
@@ -188,18 +184,27 @@ adminRouter.post(
   authMiddleware,
   async (req: Request, res: Response) => {
     const { studioId } = req.params as { studioId: string };
-    const { tag, host, port, protocol, uuid, alter_id, security, network, tls } =
-      req.body as {
-        tag?: string;
-        host?: string;
-        port?: number;
-        protocol?: string;
-        uuid?: string;
-        alter_id?: number;
-        security?: string;
-        network?: string;
-        tls?: boolean;
-      };
+    const {
+      tag,
+      host,
+      port,
+      protocol,
+      uuid,
+      alter_id,
+      security,
+      network,
+      tls,
+    } = req.body as {
+      tag?: string;
+      host?: string;
+      port?: number;
+      protocol?: string;
+      uuid?: string;
+      alter_id?: number;
+      security?: string;
+      network?: string;
+      tls?: boolean;
+    };
 
     if (!tag || !host || !uuid) {
       res.status(400).json({ error: "tag, host, and uuid are required" });
@@ -349,3 +354,4 @@ adminRouter.post(
     res.json({ ok: true });
   },
 );
+

@@ -23,6 +23,18 @@ app.use(cookieParser());
 
 app.use(express.static(path.join(process.cwd(), "admin")));
 
+app.use(async (_req, _res, next) => {
+  try {
+    if (!dbInitialized) {
+      await initDb();
+      dbInitialized = true;
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.use("/studios", studiosRouter);
 app.use("/admin/api", adminRouter);
 
@@ -39,16 +51,5 @@ app.get("/health", (_req, res) => {
 
 let dbInitialized = false;
 
-app.use(async (_req, _res, next) => {
-  try {
-    if (!dbInitialized) {
-      await initDb();
-      dbInitialized = true;
-    }
-    next();
-  } catch (error) {
-    next(error);
-  }
-});
-
 export default app;
+
