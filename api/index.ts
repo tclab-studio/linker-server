@@ -3,9 +3,9 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import path from "path";
 import dotenv from "dotenv";
-import { initDb } from "../src/db/index.js";
-import { studiosRouter } from "../src/routes/studios.js";
-import { adminRouter } from "../src/routes/admin.js";
+import { initDb } from "../src/db/index";
+import { studiosRouter } from "../src/routes/studios";
+import { adminRouter } from "../src/routes/admin";
 
 dotenv.config();
 

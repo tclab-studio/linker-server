@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
-import { StudioModel, VpnConfigModel } from "../db/index.js";
-import { VpnConfigApiResponse } from "../types/index.js";
+import { StudioModel, VpnConfigModel } from "../db/index";
+import { VpnConfigApiResponse } from "../types/index";
 
 export const studiosRouter = Router();
 
@@ -48,3 +48,4 @@ studiosRouter.post("/verify", async (req: Request, res: Response) => {
 
   res.json(response);
 });
+
