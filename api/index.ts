@@ -3,9 +3,9 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import path from "path";
 import dotenv from "dotenv";
-import { initDb } from "./db/index.js";
-import { studiosRouter } from "./routes/studios.js";
-import { adminRouter } from "./routes/admin.js";
+import { initDb } from "../src/db/index.js";
+import { studiosRouter } from "../src/routes/studios.js";
+import { adminRouter } from "../src/routes/admin.js";
 
 dotenv.config();
 
@@ -31,17 +31,24 @@ app.get("/admin", (_req, res) => {
 });
 
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", ts: new Date().toISOString() });
+  res.json({
+    status: "ok",
+    ts: new Date().toISOString(),
+  });
 });
 
-let initialized = false;
+let dbInitialized = false;
 
 app.use(async (_req, _res, next) => {
-  if (!initialized) {
-    await initDb();
-    initialized = true;
+  try {
+    if (!dbInitialized) {
+      await initDb();
+      dbInitialized = true;
+    }
+    next();
+  } catch (error) {
+    next(error);
   }
-  next();
 });
 
 export default app;
