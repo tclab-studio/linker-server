@@ -31,7 +31,6 @@ function parseShadowsocksLink(link: string): ParsedConfig | null {
 
     let decodedContent = beforeHash;
 
-    // Handle SIP002 format where everything before '#' is a single base64 block
     if (!beforeHash.includes("@")) {
       decodedContent = safeBase64Decode(beforeHash);
       if (!decodedContent.includes("@")) return null;
@@ -43,7 +42,6 @@ function parseShadowsocksLink(link: string): ParsedConfig | null {
     let userInfoB64 = decodedContent.slice(0, atIdx);
     const hostPortAndQuery = decodedContent.slice(atIdx + 1);
 
-    // Some configurations double-encode the user info block
     if (!userInfoB64.includes(":")) {
       userInfoB64 = safeBase64Decode(userInfoB64);
     }
@@ -54,7 +52,6 @@ function parseShadowsocksLink(link: string): ParsedConfig | null {
     const method = userInfoB64.slice(0, colonIdx);
     const password = userInfoB64.slice(colonIdx + 1);
 
-    // Isolate query strings or plugins from the host:port block
     const queryIdx = hostPortAndQuery.indexOf("?");
     const hostPort =
       queryIdx === -1 ? hostPortAndQuery : hostPortAndQuery.slice(0, queryIdx);
@@ -139,7 +136,6 @@ function parseVlessOrTrojanLink(
     const params = parseQueryParams(queryStr);
     const tag = decodeTag(tagRaw) || `${host}:${port}`;
 
-    // Modern reality setup often uses tcp/grpc transport under security=reality
     return {
       id: randomUUID(),
       protocol,
@@ -175,7 +171,6 @@ function parseVmessLink(link: string): ParsedConfig | null {
 
     const tag = String(json["ps"] ?? `${host}:${port}`);
 
-    // VMess providers frequently alternate between string "tls", boolean true, or string "reality"
     const rawTls = json["tls"];
     const isTls =
       rawTls === "tls" ||
@@ -230,11 +225,9 @@ export function parseSubscriptionBlob(blob: string): ParsedConfig[] {
         content = decoded;
       }
     } catch {
-      // not base64, fall through with original content
     }
   }
 
-  // Splitting safely on carriage returns or multiple line breaks
   const lines = content
     .split(/\r?\n/)
     .map((l) => l.trim())
