@@ -1,6 +1,9 @@
 import { Router, Request, Response } from "express";
 import { StudioModel } from "../db/index";
-import { getCachedConfigs, refreshStudioSubscription } from "../services/subscription";
+import {
+  getCachedConfigs,
+  refreshStudioSubscription,
+} from "../services/subscription";
 import { VpnConfigApiResponse } from "../types/index";
 
 export const studiosRouter = Router();
@@ -15,7 +18,10 @@ studiosRouter.post("/verify", async (req: Request, res: Response) => {
 
   const normalized = studio_id.trim().toUpperCase();
 
-  const studio = await StudioModel.findOne({ studio_id: normalized, active: true });
+  const studio = await StudioModel.findOne({
+    studio_id: normalized,
+    active: true,
+  });
 
   if (!studio) {
     res.status(404).json({ error: "Studio not found" });
@@ -32,7 +38,9 @@ studiosRouter.post("/verify", async (req: Request, res: Response) => {
   if (configs.length === 0) {
     const result = await refreshStudioSubscription(studio.studio_id);
     if (!result.ok) {
-      res.status(502).json({ error: `Failed to load configs: ${result.error}` });
+      res
+        .status(502)
+        .json({ error: `Failed to load configs: ${result.error}` });
       return;
     }
     configs = await getCachedConfigs(studio.studio_id);
@@ -59,6 +67,14 @@ studiosRouter.post("/verify", async (req: Request, res: Response) => {
     ws_host: c.ws_host,
     fp: c.fp,
     alpn: c.alpn,
+    // @ts-ignore
+    pbk: c.pbk,
+    // @ts-ignore
+    sid: c.sid,
+    // @ts-ignore
+    flow: c.flow,
+    // @ts-ignore
+    service_name: c.service_name,
     studio_title: studio.title,
     raw: {
       sni: c.sni,
@@ -66,9 +82,18 @@ studiosRouter.post("/verify", async (req: Request, res: Response) => {
       host: c.ws_host,
       fp: c.fp,
       alpn: c.alpn,
+      // @ts-ignore
+      pbk: c.pbk,
+      // @ts-ignore
+      sid: c.sid,
+      // @ts-ignore
+      flow: c.flow,
+      // @ts-ignore
+      service_name: c.service_name,
       raw_link: c.raw_link,
     },
   }));
 
   res.json(response);
 });
+

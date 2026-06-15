@@ -63,6 +63,10 @@ function parseShadowsocksLink(link: string): ParsedConfig | null {
       ws_host: null,
       fp: null,
       alpn: null,
+      pbk: null,
+      sid: null,
+      flow: null,
+      service_name: null,
       raw_link: link,
     };
   } catch {
@@ -134,6 +138,10 @@ function parseVlessOrTrojanLink(
       ws_host: params["host"] ?? null,
       fp: params["fp"] ?? null,
       alpn: params["alpn"] ?? null,
+      pbk: params["pbk"] ?? null,
+      sid: params["sid"] ?? null,
+      flow: params["flow"] ?? null,
+      service_name: params["serviceName"] ?? null,
       raw_link: link,
     };
   } catch {
@@ -170,6 +178,10 @@ function parseVmessLink(link: string): ParsedConfig | null {
       ws_host: json["host"] ? String(json["host"]) : null,
       fp: json["fp"] ? String(json["fp"]) : null,
       alpn: json["alpn"] ? String(json["alpn"]) : null,
+      pbk: null,
+      sid: null,
+      flow: null,
+      service_name: null,
       raw_link: link,
     };
   } catch {

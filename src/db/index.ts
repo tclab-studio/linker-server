@@ -77,7 +77,6 @@ export interface IVpnConfig extends Document {
   active: boolean;
   created_at: Date;
 }
-
 const VpnConfigSchema = new Schema<IVpnConfig>(
   {
     studio_id: { type: String, required: true, index: true },
@@ -95,13 +94,17 @@ const VpnConfigSchema = new Schema<IVpnConfig>(
     ws_host: { type: String, default: null },
     fp: { type: String, default: null },
     alpn: { type: String, default: null },
+    // @ts-ignore
+    pbk: { type: String, default: null },
+    sid: { type: String, default: null },
+    flow: { type: String, default: null },
+    service_name: { type: String, default: null },
     raw_link: { type: String, default: "" },
     active: { type: Boolean, default: true },
     created_at: { type: Date, default: Date.now },
   },
   { toJSON },
 );
-
 export const VpnConfigModel = model<IVpnConfig>("VpnConfig", VpnConfigSchema);
 
 let connected = false;
@@ -128,3 +131,4 @@ export async function initDb(): Promise<void> {
     );
   }
 }
+

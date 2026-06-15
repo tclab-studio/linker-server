@@ -16,6 +16,10 @@ export interface ParsedConfig {
   ws_host: string | null;
   fp: string | null;
   alpn: string | null;
+  pbk: string | null;
+  sid: string | null;
+  flow: string | null;
+  service_name: string | null;
   raw_link: string;
 }
 
@@ -35,6 +39,10 @@ export interface VpnConfigApiResponse {
   ws_host: string | null;
   fp: string | null;
   alpn: string | null;
+  pbk: string | null;
+  sid: string | null;
+  flow: string | null;
+  service_name: string | null;
   studio_title: string;
   raw: Record<string, unknown>;
 }

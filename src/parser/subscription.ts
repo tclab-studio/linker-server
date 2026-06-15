@@ -85,6 +85,10 @@ function parseShadowsocksLink(link: string): ParsedConfig | null {
       ws_host: null,
       fp: null,
       alpn: null,
+      pbk: null,
+      sid: null,
+      flow: null,
+      service_name: null,
       raw_link: link,
     };
   } catch {
@@ -157,6 +161,10 @@ function parseVlessOrTrojanLink(
       ws_host: orNull(params["host"]),
       fp: orNull(params["fp"]),
       alpn: orNull(params["alpn"]),
+      pbk: orNull(params["pbk"]),
+      sid: orNull(params["sid"]),
+      flow: orNull(params["flow"]),
+      service_name: orNull(params["serviceName"]),
       raw_link: link,
     };
   } catch {
@@ -194,16 +202,23 @@ function parseVmessLink(link: string): ParsedConfig | null {
       security: String(json["scy"] ?? "auto"),
       network: String(json["net"] ?? "tcp"),
       tls: isTls,
-      //@ts-ignore
+      // @ts-ignore
       sni: orNull(json["sni"] ? String(json["sni"]) : null),
-      //@ts-ignore
+      // @ts-ignore
       path: orNull(json["path"] ? String(json["path"]) : null),
-      //@ts-ignore
+      // @ts-ignore
+
       ws_host: orNull(json["host"] ? String(json["host"]) : null),
-      //@ts-ignore
+      // @ts-ignore
+
       fp: orNull(json["fp"] ? String(json["fp"]) : null),
-      //@ts-ignore
+      // @ts-ignore
+
       alpn: orNull(json["alpn"] ? String(json["alpn"]) : null),
+      pbk: null,
+      sid: null,
+      flow: null,
+      service_name: null,
       raw_link: link,
     };
   } catch {

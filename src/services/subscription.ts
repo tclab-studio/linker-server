@@ -88,6 +88,10 @@ export async function refreshStudioSubscription(
       ws_host: cfg.ws_host,
       fp: cfg.fp,
       alpn: cfg.alpn,
+      pbk: cfg.pbk,
+      sid: cfg.sid,
+      flow: cfg.flow,
+      service_name: cfg.service_name,
       raw_link: cfg.raw_link,
       active: true,
     })),
@@ -144,3 +148,4 @@ async function triggerGlobalRefresh(): Promise<void> {
     console.error(error);
   }
 }
+
