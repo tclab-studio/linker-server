@@ -126,3 +126,21 @@ export async function maybeRefreshStudio(studioId: string): Promise<void> {
     void refreshStudioSubscription(studioId);
   }
 }
+
+export function startAutoRefresh(): void {
+  void triggerGlobalRefresh();
+  setInterval(() => {
+    void triggerGlobalRefresh();
+  }, REFRESH_INTERVAL_MS);
+}
+
+async function triggerGlobalRefresh(): Promise<void> {
+  try {
+    const studios = await StudioModel.find({}, "studio_id");
+    await Promise.allSettled(
+      studios.map((studio) => maybeRefreshStudio(studio.studio_id)),
+    );
+  } catch (error) {
+    console.error(error);
+  }
+}
