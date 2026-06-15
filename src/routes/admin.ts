@@ -1,8 +1,8 @@
 import { Router, Request, Response } from "express";
 import bcrypt from "bcryptjs";
-import { AdminUserModel, StudioModel, VpnConfigModel } from "../db";
+import { AdminUserModel, StudioModel, VpnConfigModel } from "../db/index";
 import { authMiddleware, signToken } from "../middleware/auth";
-import { VpnConfig } from "../types";
+import { refreshStudioSubscription } from "../services/subscription";
 
 export const adminRouter = Router();
 
@@ -93,9 +93,10 @@ adminRouter.post(
   "/studios",
   authMiddleware,
   async (req: Request, res: Response) => {
-    const { studio_id, title } = req.body as {
+    const { studio_id, title, subscription_url } = req.body as {
       studio_id?: string;
       title?: string;
+      subscription_url?: string;
     };
 
     if (!studio_id || !title) {
@@ -114,6 +115,7 @@ adminRouter.post(
     const studio = await StudioModel.create({
       studio_id: normalized,
       title: title.trim(),
+      subscription_url: subscription_url?.trim() || null,
       active: true,
     });
 
@@ -126,11 +128,18 @@ adminRouter.patch(
   authMiddleware,
   async (req: Request, res: Response) => {
     const { studioId } = req.params as { studioId: string };
-    const { title, active } = req.body as { title?: string; active?: boolean };
+    const { title, active, subscription_url } = req.body as {
+      title?: string;
+      active?: boolean;
+      subscription_url?: string;
+    };
 
     const update: Record<string, unknown> = {};
     if (title !== undefined) update["title"] = title.trim();
     if (active !== undefined) update["active"] = active;
+    if (subscription_url !== undefined) {
+      update["subscription_url"] = subscription_url.trim() || null;
+    }
 
     const studio = await StudioModel.findOneAndUpdate(
       { studio_id: studioId },
@@ -165,51 +174,11 @@ adminRouter.delete(
   },
 );
 
-adminRouter.get(
-  "/studios/:studioId/configs",
-  authMiddleware,
-  async (req: Request, res: Response) => {
-    const { studioId } = req.params as { studioId: string };
-
-    const configs = await VpnConfigModel.find({ studio_id: studioId }).sort({
-      created_at: -1,
-    });
-
-    res.json(configs.map((c) => c.toJSON()));
-  },
-);
-
 adminRouter.post(
-  "/studios/:studioId/configs",
+  "/studios/:studioId/refresh",
   authMiddleware,
   async (req: Request, res: Response) => {
     const { studioId } = req.params as { studioId: string };
-    const {
-      tag,
-      host,
-      port,
-      protocol,
-      uuid,
-      alter_id,
-      security,
-      network,
-      tls,
-    } = req.body as {
-      tag?: string;
-      host?: string;
-      port?: number;
-      protocol?: string;
-      uuid?: string;
-      alter_id?: number;
-      security?: string;
-      network?: string;
-      tls?: boolean;
-    };
-
-    if (!tag || !host || !uuid) {
-      res.status(400).json({ error: "tag, host, and uuid are required" });
-      return;
-    }
 
     const studio = await StudioModel.findOne({ studio_id: studioId });
     if (!studio) {
@@ -217,21 +186,28 @@ adminRouter.post(
       return;
     }
 
-    const config = await VpnConfigModel.create({
-      studio_id: studioId,
-      tag: tag.trim(),
-      host: host.trim(),
-      port: port ?? 443,
-      protocol: protocol ?? "vmess",
-      uuid: uuid.trim(),
-      alter_id: alter_id ?? 0,
-      security: security ?? "auto",
-      network: network ?? "tcp",
-      tls: tls ?? false,
-      active: true,
+    const result = await refreshStudioSubscription(studioId);
+
+    if (!result.ok) {
+      res.status(502).json({ error: result.error, configCount: 0 });
+      return;
+    }
+
+    res.json({ ok: true, configCount: result.configCount });
+  },
+);
+
+adminRouter.get(
+  "/studios/:studioId/configs",
+  authMiddleware,
+  async (req: Request, res: Response) => {
+    const { studioId } = req.params as { studioId: string };
+
+    const configs = await VpnConfigModel.find({ studio_id: studioId }).sort({
+      tag: 1,
     });
 
-    res.status(201).json(config.toJSON());
+    res.json(configs.map((c) => c.toJSON()));
   },
 );
 
@@ -240,27 +216,10 @@ adminRouter.patch(
   authMiddleware,
   async (req: Request, res: Response) => {
     const { configId } = req.params as { configId: string };
-    const fields = req.body as Partial<VpnConfig>;
+    const { active } = req.body as { active?: boolean };
 
-    const allowed: (keyof VpnConfig)[] = [
-      "tag",
-      "host",
-      "port",
-      "protocol",
-      "uuid",
-      "alter_id",
-      "security",
-      "network",
-      "tls",
-      "active",
-    ];
-
-    const update: Partial<VpnConfig> = {};
-    for (const key of allowed) {
-      if (key in fields) {
-        (update as Record<string, unknown>)[key] = fields[key];
-      }
-    }
+    const update: Record<string, unknown> = {};
+    if (active !== undefined) update["active"] = active;
 
     if (Object.keys(update).length === 0) {
       res.status(400).json({ error: "No valid fields to update" });
@@ -279,22 +238,6 @@ adminRouter.patch(
     }
 
     res.json(config.toJSON());
-  },
-);
-
-adminRouter.delete(
-  "/configs/:configId",
-  authMiddleware,
-  async (req: Request, res: Response) => {
-    const { configId } = req.params as { configId: string };
-
-    const config = await VpnConfigModel.findByIdAndDelete(configId);
-    if (!config) {
-      res.status(404).json({ error: "Config not found" });
-      return;
-    }
-
-    res.json({ ok: true });
   },
 );
 
@@ -354,4 +297,3 @@ adminRouter.post(
     res.json({ ok: true });
   },
 );
-

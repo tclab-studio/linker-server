@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import { initDb } from "../src/db/index";
 import { studiosRouter } from "../src/routes/studios";
 import { adminRouter } from "../src/routes/admin";
+import { startAutoRefresh } from "../src/services/subscription";
 
 dotenv.config();
 
@@ -21,13 +22,18 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
-app.use(express.static(path.join(process.cwd(), "admin")));
+let dbInitialized = false;
+let autoRefreshStarted = false;
 
 app.use(async (_req, _res, next) => {
   try {
     if (!dbInitialized) {
       await initDb();
       dbInitialized = true;
+    }
+    if (!autoRefreshStarted) {
+      startAutoRefresh();
+      autoRefreshStarted = true;
     }
     next();
   } catch (error) {
@@ -39,7 +45,8 @@ app.use("/studios", studiosRouter);
 app.use("/admin/api", adminRouter);
 
 app.get("/admin", (_req, res) => {
-  res.sendFile(path.join(process.cwd(), "admin", "index.html"));
+  const htmlPath = path.join(__dirname, "..", "src", "index.html");
+  res.sendFile(htmlPath);
 });
 
 app.get("/health", (_req, res) => {
@@ -49,7 +56,4 @@ app.get("/health", (_req, res) => {
   });
 });
 
-let dbInitialized = false;
-
 export default app;
-

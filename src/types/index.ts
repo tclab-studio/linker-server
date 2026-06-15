@@ -1,27 +1,22 @@
-export interface Studio {
-  id: string;
-  studio_id: string;
-  title: string;
-  active: boolean;
-  created_at: Date;
-  config_count?: number;
-}
+export type ParsedProtocol = "ss" | "vless" | "vmess" | "trojan";
 
-export interface VpnConfig {
+export interface ParsedConfig {
   id: string;
-  studio_id: string;
+  protocol: ParsedProtocol;
   tag: string;
   host: string;
   port: number;
-  protocol: string;
   uuid: string;
   alter_id: number;
   security: string;
   network: string;
   tls: boolean;
-  extra: Record<string, unknown>;
-  active: boolean;
-  created_at: Date;
+  sni: string | null;
+  path: string | null;
+  ws_host: string | null;
+  fp: string | null;
+  alpn: string | null;
+  raw_link: string;
 }
 
 export interface VpnConfigApiResponse {
@@ -35,15 +30,13 @@ export interface VpnConfigApiResponse {
   security: string;
   network: string;
   tls: boolean;
+  sni: string | null;
+  path: string | null;
+  ws_host: string | null;
+  fp: string | null;
+  alpn: string | null;
   studio_title: string;
-  outbounds?: unknown[];
-}
-
-export interface AdminUser {
-  id: string;
-  username: string;
-  password_hash: string;
-  created_at: Date;
+  raw: Record<string, unknown>;
 }
 
 export interface JwtPayload {
