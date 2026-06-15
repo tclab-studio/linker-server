@@ -41,7 +41,6 @@ app.use(async (_req, _res, next) => {
   }
 });
 
-app.use("/studios", studiosRouter);
 app.use("/admin/api", adminRouter);
 
 app.get("/admin", (_req, res) => {
@@ -57,3 +56,4 @@ app.get("/health", (_req, res) => {
 });
 
 export default app;
+

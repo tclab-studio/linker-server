@@ -2,7 +2,8 @@ import { randomUUID } from "crypto";
 import { ParsedConfig, ParsedProtocol } from "../types/index";
 
 function safeBase64Decode(input: string): string {
-  let normalized = input.replace(/-/g, "+").replace(/_/g, "/");
+  let normalized = input.replace(/[^A-Za-z0-9+/_-]/g, "");
+  normalized = normalized.replace(/-/g, "+").replace(/_/g, "/");
   const pad = normalized.length % 4;
   if (pad === 2) normalized += "==";
   else if (pad === 3) normalized += "=";

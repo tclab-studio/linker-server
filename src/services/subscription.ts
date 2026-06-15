@@ -61,6 +61,7 @@ export async function refreshStudioSubscription(
   }
 
   const blob = await response.text();
+  console.log(`[SUB DEBUG] Raw response for ${studioId}:`, blob.slice(0, 500));
   const parsed = parseSubscriptionBlob(blob);
 
   if (parsed.length === 0) {
@@ -103,7 +104,6 @@ export async function refreshStudioSubscription(
 
   return { ok: true, configCount: parsed.length };
 }
-
 async function markFetchFailed(
   studioId: string,
   message: string,
