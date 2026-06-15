@@ -6,7 +6,7 @@ function safeBase64Decode(input: string): string {
   const pad = normalized.length % 4;
   if (pad === 2) normalized += "==";
   else if (pad === 3) normalized += "=";
-  else if (pad !== 0) normalized = normalized.slice(0, -pad);
+  else if (pad === 1) normalized = normalized.slice(0, -1);
   try {
     return Buffer.from(normalized, "base64").toString("utf-8");
   } catch {
@@ -20,6 +20,10 @@ function decodeTag(raw: string): string {
   } catch {
     return raw;
   }
+}
+
+function orNull(value: string | undefined): string | null {
+  return value && value.trim().length > 0 ? value : null;
 }
 
 function parseShadowsocksLink(link: string): ParsedConfig | null {
@@ -135,6 +139,7 @@ function parseVlessOrTrojanLink(
 
     const params = parseQueryParams(queryStr);
     const tag = decodeTag(tagRaw) || `${host}:${port}`;
+    const security = params["security"] ?? "none";
 
     return {
       id: randomUUID(),
@@ -144,14 +149,14 @@ function parseVlessOrTrojanLink(
       port,
       uuid,
       alter_id: 0,
-      security: params["security"] ?? "none",
+      security,
       network: params["type"] ?? "tcp",
-      tls: params["security"] === "tls" || params["security"] === "reality",
-      sni: params["sni"] ?? null,
-      path: params["path"] ?? null,
-      ws_host: params["host"] ?? null,
-      fp: params["fp"] ?? null,
-      alpn: params["alpn"] ?? null,
+      tls: security === "tls" || security === "reality",
+      sni: orNull(params["sni"]),
+      path: orNull(params["path"]),
+      ws_host: orNull(params["host"]),
+      fp: orNull(params["fp"]),
+      alpn: orNull(params["alpn"]),
       raw_link: link,
     };
   } catch {
@@ -189,11 +194,16 @@ function parseVmessLink(link: string): ParsedConfig | null {
       security: String(json["scy"] ?? "auto"),
       network: String(json["net"] ?? "tcp"),
       tls: isTls,
-      sni: json["sni"] ? String(json["sni"]) : null,
-      path: json["path"] ? String(json["path"]) : null,
-      ws_host: json["host"] ? String(json["host"]) : null,
-      fp: json["fp"] ? String(json["fp"]) : null,
-      alpn: json["alpn"] ? String(json["alpn"]) : null,
+      //@ts-ignore
+      sni: orNull(json["sni"] ? String(json["sni"]) : null),
+      //@ts-ignore
+      path: orNull(json["path"] ? String(json["path"]) : null),
+      //@ts-ignore
+      ws_host: orNull(json["host"] ? String(json["host"]) : null),
+      //@ts-ignore
+      fp: orNull(json["fp"] ? String(json["fp"]) : null),
+      //@ts-ignore
+      alpn: orNull(json["alpn"] ? String(json["alpn"]) : null),
       raw_link: link,
     };
   } catch {
@@ -219,28 +229,18 @@ export function parseSubscriptionBlob(blob: string): ParsedConfig[] {
   let content = blob.trim();
 
   if (!content.includes("://")) {
-    try {
-      const decoded = safeBase64Decode(content);
-      if (decoded.includes("://")) {
-        content = decoded;
-      }
-    } catch {
+    const decoded = safeBase64Decode(content);
+    if (decoded.includes("://")) {
+      content = decoded;
     }
   }
 
-  const lines = content
+  return content
     .split(/\r?\n/)
     .map((l) => l.trim())
-    .filter((l) => l.length > 0);
-
-  const configs: ParsedConfig[] = [];
-
-  for (const line of lines) {
-    const parsed = parseSubscriptionLink(line);
-    if (parsed) configs.push(parsed);
-  }
-
-  return configs;
+    .filter((l) => l.length > 0)
+    .map(parseSubscriptionLink)
+    .filter((c): c is ParsedConfig => c !== null);
 }
 
 export function isKnownProtocol(protocol: string): protocol is ParsedProtocol {
@@ -251,3 +251,4 @@ export function isKnownProtocol(protocol: string): protocol is ParsedProtocol {
     protocol === "trojan"
   );
 }
+

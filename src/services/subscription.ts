@@ -2,6 +2,7 @@ import { StudioModel, VpnConfigModel } from "../db/index";
 import { parseSubscriptionBlob } from "../parser/subscription";
 
 const FETCH_TIMEOUT_MS = 15000;
+const REFRESH_INTERVAL_MS = 30 * 60 * 1000;
 
 const HAPP_HEADERS: Record<string, string> = {
   "User-Agent": "Happ/3.13.0",
@@ -113,21 +114,15 @@ export async function getCachedConfigs(studioId: string) {
   return VpnConfigModel.find({ studio_id: studioId, active: true });
 }
 
-const REFRESH_INTERVAL_MS = 30 * 60 * 1000;
+export async function maybeRefreshStudio(studioId: string): Promise<void> {
+  const studio = await StudioModel.findOne({ studio_id: studioId });
+  if (!studio?.subscription_url) return;
 
-export function startAutoRefresh(): void {
-  setInterval(() => {
-    void (async () => {
-      const studios = await StudioModel.find({
-        active: true,
-        subscription_url: { $ne: null },
-      });
+  const stale =
+    !studio.last_fetched_at ||
+    Date.now() - studio.last_fetched_at.getTime() > REFRESH_INTERVAL_MS;
 
-      for (const studio of studios) {
-        refreshStudioSubscription(studio.studio_id).catch((err) => {
-          console.error(`[AutoRefresh] Failed for ${studio.studio_id}:`, err);
-        });
-      }
-    })();
-  }, REFRESH_INTERVAL_MS);
+  if (stale) {
+    void refreshStudioSubscription(studioId);
+  }
 }
