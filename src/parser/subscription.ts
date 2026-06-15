@@ -7,7 +7,11 @@ function safeBase64Decode(input: string): string {
   if (pad === 2) normalized += "==";
   else if (pad === 3) normalized += "=";
   else if (pad !== 0) normalized = normalized.slice(0, -pad);
-  return Buffer.from(normalized, "base64").toString("utf-8");
+  try {
+    return Buffer.from(normalized, "base64").toString("utf-8");
+  } catch {
+    return "";
+  }
 }
 
 function decodeTag(raw: string): string {
@@ -25,18 +29,35 @@ function parseShadowsocksLink(link: string): ParsedConfig | null {
     const beforeHash = hashIdx === -1 ? body : body.slice(0, hashIdx);
     const tagRaw = hashIdx === -1 ? "" : body.slice(hashIdx + 1);
 
-    const atIdx = beforeHash.lastIndexOf("@");
+    let decodedContent = beforeHash;
+
+    // Handle SIP002 format where everything before '#' is a single base64 block
+    if (!beforeHash.includes("@")) {
+      decodedContent = safeBase64Decode(beforeHash);
+      if (!decodedContent.includes("@")) return null;
+    }
+
+    const atIdx = decodedContent.lastIndexOf("@");
     if (atIdx === -1) return null;
 
-    const userInfoB64 = beforeHash.slice(0, atIdx);
-    const hostPort = beforeHash.slice(atIdx + 1);
+    let userInfoB64 = decodedContent.slice(0, atIdx);
+    const hostPortAndQuery = decodedContent.slice(atIdx + 1);
 
-    const userInfo = safeBase64Decode(userInfoB64);
-    const colonIdx = userInfo.indexOf(":");
+    // Some configurations double-encode the user info block
+    if (!userInfoB64.includes(":")) {
+      userInfoB64 = safeBase64Decode(userInfoB64);
+    }
+
+    const colonIdx = userInfoB64.indexOf(":");
     if (colonIdx === -1) return null;
 
-    const method = userInfo.slice(0, colonIdx);
-    const password = userInfo.slice(colonIdx + 1);
+    const method = userInfoB64.slice(0, colonIdx);
+    const password = userInfoB64.slice(colonIdx + 1);
+
+    // Isolate query strings or plugins from the host:port block
+    const queryIdx = hostPortAndQuery.indexOf("?");
+    const hostPort =
+      queryIdx === -1 ? hostPortAndQuery : hostPortAndQuery.slice(0, queryIdx);
 
     const portIdx = hostPort.lastIndexOf(":");
     if (portIdx === -1) return null;
@@ -118,6 +139,7 @@ function parseVlessOrTrojanLink(
     const params = parseQueryParams(queryStr);
     const tag = decodeTag(tagRaw) || `${host}:${port}`;
 
+    // Modern reality setup often uses tcp/grpc transport under security=reality
     return {
       id: randomUUID(),
       protocol,
@@ -152,7 +174,14 @@ function parseVmessLink(link: string): ParsedConfig | null {
     if (!host || isNaN(port)) return null;
 
     const tag = String(json["ps"] ?? `${host}:${port}`);
-    const tlsValue = String(json["tls"] ?? "");
+
+    // VMess providers frequently alternate between string "tls", boolean true, or string "reality"
+    const rawTls = json["tls"];
+    const isTls =
+      rawTls === "tls" ||
+      rawTls === "reality" ||
+      rawTls === true ||
+      rawTls === "true";
 
     return {
       id: randomUUID(),
@@ -164,7 +193,7 @@ function parseVmessLink(link: string): ParsedConfig | null {
       alter_id: parseInt(String(json["aid"] ?? "0"), 10) || 0,
       security: String(json["scy"] ?? "auto"),
       network: String(json["net"] ?? "tcp"),
-      tls: tlsValue === "tls" || tlsValue === "reality",
+      tls: isTls,
       sni: json["sni"] ? String(json["sni"]) : null,
       path: json["path"] ? String(json["path"]) : null,
       ws_host: json["host"] ? String(json["host"]) : null,
@@ -205,6 +234,7 @@ export function parseSubscriptionBlob(blob: string): ParsedConfig[] {
     }
   }
 
+  // Splitting safely on carriage returns or multiple line breaks
   const lines = content
     .split(/\r?\n/)
     .map((l) => l.trim())
